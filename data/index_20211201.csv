@@ -1,4 +1,4 @@
-constituent_id,ticker,figi,index_weight,market_cap
+constituent_id,ticker,figi,index_weight,market_cap,business_date
 C1,AAPL,BBG1111,0.02,2.01,20211201
 C2,GOOGL,BBG2222,0.05,1.96,20211201
 C3,ZURN,BBG3333,0.01,0.23,20211201
