@@ -1,4 +1,4 @@
-security_id,name,id_bb_global,cusip,business_date
-S4,GlaxoSmithKline,BBG4444,AB22333,20211201
-S5,Sprott Uranium Trust,BBG5555,5P6L679,20211201
-S6,Snowflake,BBG6666,0C064K3,20211201
+security_id,security_name,id_bb_global,cusip,business_date
+S4,GlaxoSmithKline,BBG4444,AB22333,2021-12-01
+S5,Sprott Uranium Trust,BBG5555,5P6L679,2021-12-01
+S6,Snowflake,BBG6666,0C064K3,2021-12-01
