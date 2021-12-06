@@ -2,5 +2,6 @@ security_id,security_name,id_bb_global,cusip,business_date
 S1,Apple,BBG1111,123W456,2021-12-01
 S2,Alphabet,BBG2222,222B341,2021-12-01
 S3,Zurich Insurance Group,BBG3333,35G2330,2021-12-01
-S4,GlaxoSmithKline,BBG4444,AB22333.9999,2021-12-01
-S5,Sprott Uranium Trust,,5P6L679,2021-12-01
+S4,GlaxoSmithKline,BBG4444,,2021-12-01
+S5,Microsoft,BBG5555,B112NU9,2021-12-01
+S6,Sprott Uranium Trust,,5P6L679,2021-12-01
