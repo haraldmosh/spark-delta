@@ -13,7 +13,7 @@ def test_index_security(tmpdir):
 
     spark = configure_spark_with_delta_pip(builder).getOrCreate()
 
-    db_name = "cyrus"
+    db_name = "sirius"
     spark.sql(f"DROP DATABASE IF EXISTS {db_name}")
     spark.sql(f"CREATE DATABASE {db_name}")
     spark.sql(f"USE {db_name}")
@@ -70,26 +70,30 @@ def general_bronze_pipeline(spark, df, domain, domain_root_file_path, partition_
 
 
 def security_silver_pipeline(spark, business_date, security_root_path):
+    security_schema = f"""
+        security_id string,
+        security_name string,
+        id_bb_global string, 
+        cusip string, 
+        effective_business_date string,
+        end_date string,
+        latest boolean
+    """
+
+    # HISTORY table
+
     spark.sql(
         f"""
-          CREATE TABLE IF NOT EXISTS security_silver(
-            security_id string,
-            security_name string,
-            id_bb_global string, 
-            cusip string, 
-            effective_business_date string,
-            end_date string,
-            latest boolean
-          )
+          CREATE TABLE IF NOT EXISTS security_history_silver({security_schema})
           USING DELTA
-          LOCATION '{security_root_path}/silver'
+          LOCATION '{security_root_path}/history_silver'
           PARTITIONED BY (effective_business_date)
         """
     )
 
     spark.sql(
         f"""
-            MERGE INTO security_silver
+            MERGE INTO security_history_silver
             USING (
                 -- This will either update existing rows or insert new rows
                 SELECT 
@@ -118,15 +122,48 @@ def security_silver_pipeline(spark, business_date, security_root_path):
                     '9999-12-31' as end_date, 
                     true as latest
                 FROM security_bronze sb
-                JOIN security_silver ss
-                ON sb.security_id = ss.security_id
-                AND ss.latest = true
+                JOIN security_history_silver shs
+                ON sb.security_id = shs.security_id
+                AND shs.latest = true
                 AND sb.business_date = '{business_date}'
                 AND sb.id_bb_global IS NOT NULL
             ) AS security_bronze_bd
-            ON security_silver.security_id = security_bronze_bd.merge_key
-            WHEN MATCHED AND security_silver.latest = true THEN 
+            ON security_history_silver.security_id = security_bronze_bd.merge_key
+            WHEN MATCHED AND security_history_silver.latest = true THEN 
                 UPDATE SET latest = false, end_date = security_bronze_bd.effective_business_date
+            WHEN NOT MATCHED THEN INSERT *             
+        """
+    )
+
+    # LATEST table
+
+    spark.sql(
+        f"""
+          CREATE TABLE IF NOT EXISTS security_latest_silver({security_schema})
+          USING DELTA
+          LOCATION '{security_root_path}/latest_silver'
+          PARTITIONED BY (effective_business_date)
+        """
+    )
+
+    spark.sql(
+        f"""
+            MERGE INTO security_latest_silver
+            USING (
+                SELECT 
+                    security_id,
+                    security_name, 
+                    id_bb_global, 
+                    cusip, 
+                    business_date as effective_business_date, 
+                    '9999-12-31' as end_date, 
+                    true as latest
+                FROM security_bronze sb
+                WHERE sb.business_date = '{business_date}'
+                AND sb.id_bb_global IS NOT NULL
+            ) AS security_bronze_bd
+            ON security_latest_silver.security_id = security_bronze_bd.security_id
+            WHEN MATCHED THEN UPDATE SET *
             WHEN NOT MATCHED THEN INSERT *             
         """
     )
@@ -197,12 +234,11 @@ def index_gold_pipeline(spark, business_date, temp_dir):
                 is.index_weight, 
                 is.market_cap, 
                 is.effective_business_date, 
-                ss.security_id,
-                ss.cusip
+                sls.security_id,
+                sls.cusip
             FROM index_silver is
-            LEFT JOIN security_silver ss
-            ON is.figi = ss.id_bb_global
+            LEFT JOIN security_latest_silver sls
+            ON is.figi = sls.id_bb_global
             WHERE is.effective_business_date = '{business_date}' 
-            AND ss.latest = true
         """
     )
