@@ -22,17 +22,17 @@ def get_spark_session():
     )
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Pipeline bootstrap.')
+def parse_arguments(args):
+    parser = argparse.ArgumentParser(description='Bootstrap pipeline task.')
     parser.add_argument('--db_name', dest="db_name", default="sirius", type=str,
                         help='The database name.')
     parser.add_argument('--drop_existing_db', dest='drop_existing_db', default=False, type=bool,
                         help='If true, the database is first dropped.')
 
-    return parser.parse_args(sys.argv[1:])
+    return parser.parse_args(args)
 
 
 if __name__ == '__main__':
-    args = parse_arguments()
+    arguments = parse_arguments(sys.argv[1:])
 
     run_initialisation_stage(get_spark_session(), args.db_name, args.drop_existing_db)

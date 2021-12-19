@@ -1,5 +1,7 @@
 import argparse
+import os
 import sys
+from datetime import datetime as dt
 
 from delta import *
 from pyspark.sql import SparkSession
@@ -143,21 +145,38 @@ def get_spark_session():
     )
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Pipeline bootstrap.')
+def parse_arguments(args):
+    parser = argparse.ArgumentParser(description='Index Task.')
+    parser.add_argument('--input_file_uri', type=str,
+                        help="The uri of the input file")
+    parser.add_argument('--output_root_uri', type=str,
+                        help="The root for the output")
     parser.add_argument('--db_name', dest="db_name", default="sirius", type=str,
                         help='The database name.')
-    parser.add_argument('--drop_existing_db', dest='drop_existing_db', default=False, type=bool,
-                        help='If true, the database is first dropped.')
 
-    return parser.parse_args(sys.argv[1:])
+    return parser.parse_args(args)
+
+
+def extract_business_date(file_path):
+    file_path = file_path.replace("s3://", "")
+    file_name = os.path.splitext(file_path.split('/')[-1])[0]
+    file_date = file_name.split('_')[-1]
+    return file_date
+
+
+def canonical_business_date(file_date):
+    return dt.strptime(file_date, "%Y%m%d").strftime("%Y-%m-%d")
+
+
+def run_security_ingestion(args):
+    spark_session = get_spark_session()
+    spark_session.sql(f"USE {args.db_name}")
+
+    business_date = canonical_business_date(extract_business_date(args.input_file_uri))
+
+    ingest_security_file(spark_session, business_date, args.input_file_uri, args.output_root_uri)
 
 
 if __name__ == '__main__':
-    spark_session = get_spark_session()
-
-    db_name = "sirius"
-    spark.sql(f"USE {db_name}")
-
-    business_date = '2021-12-01'
-    ingest_security_file(spark_session, business_date, "../data/security_20211201.csv", tmpdir)
+    arguments = parse_arguments(sys.argv[1:])
+    run_security_ingestion(arguments)

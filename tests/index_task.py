@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from datetime import datetime as dt
 
 from pyspark.sql import SparkSession
@@ -77,8 +78,8 @@ def get_spark_session():
     )
 
 
-def parse_arguments():
-    parser = argparse.ArgumentParser(description='Pipeline bootstrap.')
+def parse_arguments(args):
+    parser = argparse.ArgumentParser(description='Index Task.')
     parser.add_argument('--input_file_uri', type=str,
                         help="The uri of the input file")
     parser.add_argument('--output_root_uri', type=str,
@@ -86,7 +87,7 @@ def parse_arguments():
     parser.add_argument('--db_name', dest="db_name", default="sirius", type=str,
                         help='The database name.')
 
-    return parser.parse_args(sys.argv[1:])
+    return parser.parse_args(args)
 
 
 def extract_business_date(file_path):
@@ -110,5 +111,5 @@ def run_index_ingestion(args):
 
 
 if __name__ == '__main__':
-    arguments = parse_arguments()
+    arguments = parse_arguments(sys.argv[1:])
     run_index_ingestion(arguments)
