@@ -3,3 +3,6 @@ venv
 .venv
 .DS_Store
 *.iml
+.vscode/settings.json
+scripts/bash
+tests/__pycache__/
